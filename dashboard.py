@@ -1,6 +1,7 @@
 import json
 from PyQt5.QtWidgets import *
 from PyQt5.Qt import *
+from PyQt5.QtGui import QKeyEvent
 import config
 from typing import *
 
@@ -109,10 +110,19 @@ class Window(QMainWindow):
         # reloading data
         self.reload()
 
+    def keyPressEvent(self, event):
+        '''
+        Reloading upon pressing a key
+        '''
+        if isinstance(event, QKeyEvent):
+            if event.key() == Qt.Key_F5:
+                self.reload()
+
     def reload(self):
         '''
         Reloads data from a file.
         '''
+        print("Reloading")
         try:
             with open(config.INDEX_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
