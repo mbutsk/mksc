@@ -57,7 +57,7 @@ class Collector:
                 "mouse_move": self.mouse_move
             }
 
-            with open(self.file, 'w') as f:
+            with open(self.file, 'w', encoding='utf-8') as f:
                 json.dump(data, f)
 
         except Exception as e:
@@ -86,7 +86,7 @@ class Collector:
 
         # index
         try:
-            with open(self.file, 'r') as f:
+            with open(self.file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
             self.keystrokes: Dict[int,int] = {
