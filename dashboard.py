@@ -207,6 +207,19 @@ class KeyList(QScrollArea):
 
         self.kc = True
         self.ad = True
+        self.editing = False
+
+        # sorting key controls
+        self.kc_combo = QComboBox()
+        self.kc_combo.addItems(['By scancode', 'By amount'])
+        self.kc_combo.setCurrentIndex(int(self.kc))
+        self.kc_combo.currentIndexChanged.connect(self.kc_change)
+
+        # ascending/descending controls
+        self.ad_combo = QComboBox()
+        self.ad_combo.addItems(['Ascending', 'Descending'])
+        self.ad_combo.setCurrentIndex(int(self.ad))
+        self.ad_combo.currentIndexChanged.connect(self.ad_change)
 
         # adding elements
         self.data = data
@@ -217,6 +230,9 @@ class KeyList(QScrollArea):
         '''
         Callback for changing Ascending/Descending sorting mode.
         '''
+        if self.editing: return
+        self.editing = True
+        
         self.ad = index == 1
         self.reload_data()
 
@@ -225,6 +241,9 @@ class KeyList(QScrollArea):
         '''
         Callback for changing sorting mode.
         '''
+        if self.editing: return
+        self.editing = True
+
         self.kc = index == 1
         self.reload_data()
 
@@ -240,26 +259,12 @@ class KeyList(QScrollArea):
 
         # controls
         c_layout = QHBoxLayout()
+        c_layout.addWidget(self.kc_combo)
+        c_layout.addWidget(self.ad_combo)
 
-        # sorting key controls
-        combo = QComboBox()
-        combo.addItems(['By keycode', 'By amount'])
-        combo.setCurrentIndex(int(self.kc))
-        combo.currentIndexChanged.connect(self.kc_change)
-
-        c_layout.addWidget(combo)
-
-        # ascending/descending controls
-        combo = QComboBox()
-        combo.addItems(['Ascending', 'Descending'])
-        combo.setCurrentIndex(int(self.ad))
-        combo.currentIndexChanged.connect(self.ad_change)
-
-        c_layout.addWidget(combo)
-
-        # controls separator
         layout.addLayout(c_layout)
 
+        # controls separator
         frame = QFrame()
         frame.setFrameStyle(QFrame.HLine | QFrame.Raised)
         frame.setLineWidth(1)
@@ -303,6 +308,8 @@ class KeyList(QScrollArea):
         widget.setLayout(layout)
         self.setMinimumWidth(widget.sizeHint().width()+30)
         self.setWidget(widget)
+
+        self.editing = False
 
 
 # window
