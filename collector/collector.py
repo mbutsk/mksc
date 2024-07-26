@@ -74,6 +74,7 @@ class Collector:
         Creates a new file.
         '''
         self.keystrokes: Dict[int,int] = {}
+        self.mouse_move: int = 0
 
 
     def read(self):

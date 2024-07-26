@@ -1,4 +1,5 @@
 from typing import *
+from config import *
 
 
 def shorten(number: float, rounding: int=2) -> str:
@@ -44,3 +45,19 @@ def lerp(a:float, b:float, t:float) -> float:
     '''
     t = max(0,min(1,t))
     return (1 - t) * a + t * b
+
+
+def get_heatmap_color(percent:float) -> str:
+    '''
+    Returns a hex color of a heatmap gradient at a certain pos.
+    '''
+    offset = len(HEATMAP_COLORS)-1
+    opercent = percent*offset
+    offset = min(offset-1,int(opercent))
+    rpercent = opercent%1.0
+    
+    r = int(lerp(HEATMAP_COLORS[0+offset][0], HEATMAP_COLORS[1+offset][0], rpercent))
+    g = int(lerp(HEATMAP_COLORS[0+offset][1], HEATMAP_COLORS[1+offset][1], rpercent))
+    b = int(lerp(HEATMAP_COLORS[0+offset][2], HEATMAP_COLORS[1+offset][2], rpercent))
+
+    return '#%02x%02x%02x' % (r,g,b)

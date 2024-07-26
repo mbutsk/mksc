@@ -1,7 +1,8 @@
 import json
+import time
 from PyQt5.QtWidgets import *
 from PyQt5.Qt import *
-from PyQt5.QtGui import QKeyEvent, QPixmap, QPainter, QFont
+from PyQt5.QtGui import *
 import config
 from typing import *
 import os
@@ -15,6 +16,97 @@ winkey = 'Win' if os.name == 'nt' else 'Meta'
 
 kb_size = [450,185]
 s = [27,27] # default key size
+
+key_names = {
+    1:  'Esc',
+    2:  '1',
+    3:  '2',
+    4:  '3',
+    5:  '4',
+    6:  '5',
+    7:  '6',
+    8:  '7',
+    9:  '8',
+    10: '9',
+    11: '0',
+    12: '-',
+    13: '=',
+    14: 'Backspace',
+    15: 'Tab',
+    16: 'Q',
+    17: 'W',
+    18: 'E',
+    19: 'R',
+    20: 'T',
+    21: 'Y',
+    22: 'U',
+    23: 'I',
+    24: 'O',
+    25: 'P',
+    26: '[',
+    27: ']',
+    28: 'Enter',
+    29: 'Ctrl',
+    30: 'A',
+    31: 'S',
+    32: 'D',
+    33: 'F',
+    34: 'G',
+    35: 'H',
+    36: 'J',
+    37: 'K',
+    38: 'L',
+    39: ';',
+    40: '\'',
+    41: '`',
+    42: 'Left Shift',
+    43: '\\',
+    44: 'Z',
+    45: 'X',
+    46: 'C',
+    47: 'V',
+    48: 'B',
+    49: 'N',
+    50: 'M',
+    51: ',',
+    52: '.',
+    53: '/',
+    54: 'Right Shift',
+    55: 'Print Screen',
+    56: 'Alt',
+    57: 'Space',
+    58: 'Caps',
+    59: 'F1',
+    60: 'F2',
+    61: 'F3',
+    62: 'F4',
+    63: 'F5',
+    64: 'F6',
+    65: 'F7',
+    66: 'F8',
+    67: 'F9',
+    68: 'F10',
+    69: 'Num Lock',
+    70: 'Scroll Lock',
+    71: 'Home',
+    72: 'Up',
+    73: 'Page Up',
+    74: '- (Minus)',
+    75: 'Left',
+    76: 'Center',
+    77: 'Right',
+    78: '+ (Plus)',
+    79: 'End',
+    80: 'Down',
+    81: 'Page Down',
+    82: 'Insert',
+    83: 'Delete',
+
+    87: 'F11',
+    88: 'F12',
+    91: 'Windows/Super/Meta',
+    93: 'Menu',
+}
 
 rects = {
     1:  ['Esc', 0,  0,*s],
@@ -99,6 +191,118 @@ rects = {
     80: [None, 380,170,32,12],
     77: ['>',  415,155,32,27],
 }
+
+# key stats as list
+
+class KeyList(QScrollArea):
+    def __init__(self, data:Dict[int,int]):
+        '''
+        Keystroke data as a scrollable list.
+        '''
+        super().__init__(None)
+        self.setWindowTitle('Keystroke List')
+        self.setFrameStyle(QFrame.NoFrame)
+
+        self.setWidgetResizable(True)
+
+        self.kc = True
+        self.ad = True
+
+        # adding elements
+        self.data = data
+        self.reload_data(data)
+
+
+    def ad_change(self, index:int):
+        '''
+        Callback for changing Ascending/Descending sorting mode.
+        '''
+        self.ad = index == 1
+        self.reload_data()
+
+
+    def kc_change(self, index:int):
+        '''
+        Callback for changing sorting mode.
+        '''
+        self.kc = index == 1
+        self.reload_data()
+
+
+    def reload_data(self, data:Dict[int,int] = None):
+        '''
+        Reloads the data.
+        '''
+        if data == None:
+            data = self.data
+
+        layout = QVBoxLayout()
+
+        # controls
+        c_layout = QHBoxLayout()
+
+        # sorting key controls
+        combo = QComboBox()
+        combo.addItems(['By keycode', 'By amount'])
+        combo.setCurrentIndex(int(self.kc))
+        combo.currentIndexChanged.connect(self.kc_change)
+
+        c_layout.addWidget(combo)
+
+        # ascending/descending controls
+        combo = QComboBox()
+        combo.addItems(['Ascending', 'Descending'])
+        combo.setCurrentIndex(int(self.ad))
+        combo.currentIndexChanged.connect(self.ad_change)
+
+        c_layout.addWidget(combo)
+
+        # controls separator
+        layout.addLayout(c_layout)
+
+        frame = QFrame()
+        frame.setFrameStyle(QFrame.HLine | QFrame.Raised)
+        frame.setLineWidth(1)
+        layout.addWidget(frame)
+
+        # sorting elements
+        if not self.kc:
+            data = dict(sorted(data.items(), reverse=self.ad))
+        else:
+            data = dict(sorted(data.items(), key=lambda x: x[1], reverse=self.ad))
+
+        # adding elements
+        for scancode, amount in data.items():
+            row = QHBoxLayout()
+
+            # title
+            if scancode in key_names:
+                name = key_names[scancode]
+                title = QLabel(f"{name} ({scancode})")
+            
+            else:
+                title = QLabel(f"Unknown scancode ({scancode})")
+                title.setStyleSheet('color: gray')
+
+            # amount
+            amount_label = QLabel(f'{amount}')
+            font = amount_label.font()
+            font.setBold(True)
+            amount_label.setFont(font)
+
+            amount_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+            # adding widgets
+            row.addWidget(title)
+            row.addWidget(amount_label)
+
+            layout.addLayout(row)
+
+        # setting layout
+        widget = QWidget()
+        widget.setLayout(layout)
+        self.setMinimumWidth(widget.sizeHint().width()+30)
+        self.setWidget(widget)
 
 
 # window
@@ -201,6 +405,13 @@ class Window(QMainWindow):
 
         layout.addWidget(self.kb_label)
 
+        # full stats button
+        button = QPushButton("View as list...")
+        button.clicked.connect(self.show_keylist)
+        layout.addWidget(button)
+
+        self.kb_window = None
+
         # adding widgets
         layout.setAlignment(Qt.AlignTop)
         widget = QWidget()
@@ -209,7 +420,17 @@ class Window(QMainWindow):
         self.setCentralWidget(widget)
 
         # reloading data
+        self.kb_data = None
         self.reload()
+
+
+    def show_keylist(self):
+        if self.kb_data == None: return
+
+        if self.kb_window == None:
+            self.kb_window = KeyList(self.kb_data)
+        self.kb_window.show()
+
 
     def redraw_keyboard(self, data:Dict[int,int]):
         '''
@@ -217,6 +438,16 @@ class Window(QMainWindow):
         '''
         print('Redrawing')
 
+        # calculating data
+        if len(data) != 0:
+            max_val = max(data.values())
+            percents = {
+                k: v/max_val for k,v in data.items()
+            }
+        else:
+            percents = {}
+
+        # drawing keyboard
         canvas = QPixmap(*kb_size)
         canvas.fill(Qt.transparent)
         self.kb_label.setPixmap(canvas)
@@ -228,10 +459,19 @@ class Window(QMainWindow):
             rect = rect[1:]
             size = rect[2:]
 
+            # color
             if scancode in data:
                 amount = utils.shorten(data[scancode], 1)
+                color = utils.get_heatmap_color(percents[scancode])
             else:
                 amount = '0'
+                color = '#%02x%02x%02x' % config.HEATMAP_COLORS[0]
+
+            # rect
+            brush = QBrush()
+            brush.setStyle(Qt.SolidPattern)
+            brush.setColor(QColor(color))
+            painter.setBrush(brush)
 
             painter.drawRect(*rect)
 
@@ -259,6 +499,7 @@ class Window(QMainWindow):
         
         painter.end()
 
+
     def keyPressEvent(self, event):
         '''
         Reloading upon pressing a key
@@ -266,6 +507,7 @@ class Window(QMainWindow):
         if isinstance(event, QKeyEvent):
             if event.key() == Qt.Key_F5:
                 self.reload()
+
 
     def reload(self):
         '''
@@ -291,13 +533,17 @@ class Window(QMainWindow):
             self.kb_press.setText(f'{utils.shorten(total)}')
 
             # keyboard layout
-            self.redraw_keyboard({int(k):v for k,v in data['keystrokes'].items()})
+            self.kb_data: Dict[int,int] = {
+                int(k):v for k,v in data['keystrokes'].items()
+            }
+            self.redraw_keyboard(self.kb_data)
 
         except Exception as e:
             print(f'Error reading file: {e}')
 
             self.mouse_pixels.setText('Error')
             self.mouse_meters.setText('Error')
+            self.kb_press.setText('Error')
 
 
 app = QApplication([])
