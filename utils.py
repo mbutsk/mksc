@@ -51,6 +51,8 @@ def get_heatmap_color(percent:float) -> str:
     '''
     Returns a hex color of a heatmap gradient at a certain pos.
     '''
+    if percent == 1.0: return '#%02x%02x%02x' % HEATMAP_COLORS[-1]
+
     offset = len(HEATMAP_COLORS)-1
     opercent = percent*offset
     offset = min(offset-1,int(opercent))
