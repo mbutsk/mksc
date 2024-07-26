@@ -1,0 +1,7 @@
+pillow
+win10toast
+keyboard
+pyautogui
+theaduing
+PyQt5
+pystray
