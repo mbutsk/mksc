@@ -14,7 +14,7 @@ import utils
 
 winkey = 'Win' if os.name == 'nt' else 'Meta'
 
-kb_size = [450,185]
+kb_size = [448,183]
 s = [27,27] # default key size
 
 key_names = {
@@ -544,6 +544,10 @@ class Window(QMainWindow):
                 int(k):v for k,v in data['keystrokes'].items()
             }
             self.redraw_keyboard(self.kb_data)
+
+            # reloading menu
+            if self.kb_window != None:
+                self.kb_window.reload_data(self.kb_data)
 
         except Exception as e:
             print(f'Error reading file: {e}')
