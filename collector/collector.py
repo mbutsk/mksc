@@ -15,7 +15,7 @@ class Collector:
         '''
         A collector class.
         '''
-        keyboard.on_press(self.on_key_press)
+        keyboard.on_release(self.on_key_press)
 
         self.file: str = index_file
 
