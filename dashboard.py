@@ -213,12 +213,14 @@ class KeyList(QScrollArea):
         self.kc_combo = QComboBox()
         self.kc_combo.addItems(['By scancode', 'By amount'])
         self.kc_combo.setCurrentIndex(int(self.kc))
+        self.kc_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.kc_combo.currentIndexChanged.connect(self.kc_change)
 
         # ascending/descending controls
         self.ad_combo = QComboBox()
         self.ad_combo.addItems(['Ascending', 'Descending'])
         self.ad_combo.setCurrentIndex(int(self.ad))
+        self.ad_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.ad_combo.currentIndexChanged.connect(self.ad_change)
 
         # adding elements
@@ -257,8 +259,14 @@ class KeyList(QScrollArea):
 
         layout = QVBoxLayout()
 
-        # controls
+        # sorting controls
         c_layout = QHBoxLayout()
+        
+        label = QLabel('Sort...')
+        label.setStyleSheet('color: gray')
+        label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        c_layout.addWidget(label)
+
         c_layout.addWidget(self.kc_combo)
         c_layout.addWidget(self.ad_combo)
 
