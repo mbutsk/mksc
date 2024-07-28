@@ -9,6 +9,9 @@ import os
 
 import utils
 
+# QFontDatabase.addApplicationFont(config.FONT)
+# print('a')
+
 
 # keyboard
 
@@ -192,9 +195,138 @@ rects = {
     77: ['>',  415,155,32,27],
 }
 
+# custom elements
+
+class ComboBox(QComboBox):
+    def __init__(self):
+        super().__init__()
+
+        # styling
+        self.setStyleSheet('''
+            QComboBox {
+                border-radius: 5px;
+                color: #f0f0f0;
+                padding: 3px 10px;
+            }
+                                    
+            QComboBox:!editable, QComboBox::drop-down:editable {
+                background-color: #333333;
+            }
+            QComboBox:hover {
+                background-color: #444444;
+            }
+
+            QComboBox:!editable:on, QComboBox::drop-down:editable:on {
+                background-color: #555555;
+            }
+
+            QComboBox::drop-down {
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 15px;
+
+                border-left-width: 1px;
+                border-left-color: #777777;
+                border-left-style: solid;
+                border-top-right-radius: 5px;
+                border-bottom-right-radius: 5px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #333333;
+                border-radius: 5px;
+
+                color: #f0f0f0;
+                selection-background-color: #444444;
+            }
+        ''')
+        self.setFont(QFont(config.FONT_NAME, 10))
+
+
+class Splitter(QFrame):
+    def __init__(self, thicc:bool=False):
+        super().__init__()
+        self.setFrameStyle(QFrame.HLine | QFrame.Plain)
+        self.setLineWidth(2 if thicc else 1)
+        self.setStyleSheet(
+            'color: #555555;'+
+            ('padding: 0px 3px' if thicc else '')
+        )
+
+
+class Label(QLabel):
+    def __init__(self, *args, **kwargs):
+        # bold font
+        if kwargs.get('bold',False):
+            font = QFont(config.BOLD_FONT_NAME, 10)
+        else:
+            font = QFont(config.FONT_NAME, 10)
+            
+        if 'bold' in kwargs:
+            kwargs.pop('bold')
+
+        super().__init__(*args, **kwargs)
+
+        self.setFont(font)
+        self.setStyleSheet('color: #f0f0f0')
+
+
+class Button(QPushButton):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # styling
+        self.setFont(QFont(config.FONT_NAME, 10))
+        self.setStyleSheet('''
+            QPushButton {
+                background-color: #333333;
+                color: #f0f0f0;
+                border-radius: 5px;
+                padding: 3px 10px;
+            }
+            QPushButton:hover {
+                background-color: #444444;
+            }
+            QPushButton:pressed {
+                background-color: #555555;
+            }
+        ''')
+
+
+class ScrollArea(QScrollArea):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        self.setStyleSheet('''
+            QScrollBar {
+                background: #202020;
+                width: 10px;
+                padding: 5px 2px 5px 0px;
+            }
+
+            QScrollBar::handle {
+                background-color: #555555;
+                min-height: 5px;
+                border-radius: 4px;
+            }
+            QScrollBar::handle:hover {
+                background-color: #666666;
+            }
+            QScrollBar::handle:pressed {
+                background-color: #888888
+            }
+                                    
+            QScrollBar::add-page, QScrollBar::sub-page {
+                background: none;
+            }
+            QScrollBar::add-line, QScrollBar::sub-line {
+                height: 0px;
+            }
+        ''')
+
+
 # key stats as list
 
-class KeyList(QScrollArea):
+class KeyList(ScrollArea):
     def __init__(self, data:Dict[int,int]):
         '''
         Keystroke data as a scrollable list.
@@ -206,18 +338,26 @@ class KeyList(QScrollArea):
         self.setWidgetResizable(True)
 
         self.kc = True
+        self.uk = 0
         self.ad = True
         self.editing = False
 
+        # filter controls
+        self.uk_combo = ComboBox()
+        self.uk_combo.addItems(['All', 'Unknown scancodes', 'Known scancodes'])
+        self.uk_combo.setCurrentIndex(self.uk)
+        self.uk_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.uk_combo.currentIndexChanged.connect(self.uk_change)
+
         # sorting key controls
-        self.kc_combo = QComboBox()
+        self.kc_combo = ComboBox()
         self.kc_combo.addItems(['By scancode', 'By amount'])
         self.kc_combo.setCurrentIndex(int(self.kc))
         self.kc_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.kc_combo.currentIndexChanged.connect(self.kc_change)
 
         # ascending/descending controls
-        self.ad_combo = QComboBox()
+        self.ad_combo = ComboBox()
         self.ad_combo.addItems(['Ascending', 'Descending'])
         self.ad_combo.setCurrentIndex(int(self.ad))
         self.ad_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -226,6 +366,17 @@ class KeyList(QScrollArea):
         # adding elements
         self.data = data
         self.reload_data(data)
+
+
+    def uk_change(self, index:int):
+        '''
+        Changes the unknown/known scancodes filter.
+        '''
+        if self.editing: return
+        self.editing = True
+
+        self.uk = index
+        self.reload_data()
 
 
     def ad_change(self, index:int):
@@ -259,10 +410,22 @@ class KeyList(QScrollArea):
 
         layout = QVBoxLayout()
 
+        # filter controls
+        c_layout = QHBoxLayout()
+        
+        label = Label('Filter...')
+        label.setStyleSheet('color: gray')
+        label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        c_layout.addWidget(label)
+
+        c_layout.addWidget(self.uk_combo)
+
+        layout.addLayout(c_layout)
+
         # sorting controls
         c_layout = QHBoxLayout()
         
-        label = QLabel('Sort...')
+        label = Label('Sort...')
         label.setStyleSheet('color: gray')
         label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         c_layout.addWidget(label)
@@ -272,10 +435,7 @@ class KeyList(QScrollArea):
 
         layout.addLayout(c_layout)
 
-        # controls separator
-        frame = QFrame()
-        frame.setFrameStyle(QFrame.HLine | QFrame.Raised)
-        frame.setLineWidth(1)
+        frame = Splitter()
         layout.addWidget(frame)
 
         # sorting elements
@@ -284,6 +444,12 @@ class KeyList(QScrollArea):
         else:
             data = dict(sorted(data.items(), key=lambda x: x[1], reverse=self.ad))
 
+        # filtering elements
+        if self.uk == 1:
+            data = {k:v for k,v in data.items() if k not in key_names}
+        if self.uk == 2:
+            data = {k:v for k,v in data.items() if k in key_names}
+
         # adding elements
         for scancode, amount in data.items():
             row = QHBoxLayout()
@@ -291,16 +457,15 @@ class KeyList(QScrollArea):
             # title
             if scancode in key_names:
                 name = key_names[scancode]
-                title = QLabel(f"{name} ({scancode})")
+                title = Label(f"{name} ({scancode})")
             
             else:
-                title = QLabel(f"Unknown scancode ({scancode})")
+                title = Label(f"Unknown scancode ({scancode})")
                 title.setStyleSheet('color: gray')
 
             # amount
-            amount_label = QLabel(f'{amount}')
+            amount_label = Label(f'{amount}', bold=True)
             font = amount_label.font()
-            font.setBold(True)
             amount_label.setFont(font)
 
             amount_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -313,6 +478,7 @@ class KeyList(QScrollArea):
 
         # setting layout
         widget = QWidget()
+        widget.setStyleSheet('background-color: #202020;')
         widget.setLayout(layout)
         self.setMinimumWidth(widget.sizeHint().width()+30)
         self.setWidget(widget)
@@ -334,14 +500,13 @@ class Window(QMainWindow):
         # F5 label
         title_layout = QHBoxLayout()
 
-        title = QLabel("MKSC")
+        title = Label("MKSC", bold=True)
         font = title.font()
-        font.setBold(True)
-        font.setPointSize(18)
+        font.setPointSize(24)
         title.setFont(font)
         title_layout.addWidget(title)
 
-        f5 = QLabel("Press F5 to reload")
+        f5 = Label("Press F5 to reload")
         f5.setStyleSheet('color: gray')
         title_layout.addWidget(f5)
         f5.setAlignment(Qt.AlignRight | Qt.AlignCenter)
@@ -349,36 +514,33 @@ class Window(QMainWindow):
         layout.addLayout(title_layout)
         
         # mouse stats splitter
-        frame = QFrame()
-        frame.setFrameStyle(QFrame.HLine | QFrame.Raised)
-        frame.setLineWidth(2)
+        frame = Splitter(thicc=True)
         layout.addWidget(frame)
 
         # mouse stats title
-        title = QLabel("Mouse Move Stats")
+        title = Label("Mouse Move Stats", bold=True)
         font = title.font()
-        font.setBold(True)
-        font.setPointSize(10)
+        font.setPointSize(12)
         title.setFont(font)
         layout.addWidget(title)
 
         # stats
-        self.mouse_pixels = QLabel("Loading...")
+        self.mouse_pixels = Label("Loading...")
         self.mouse_pixels.setAlignment(Qt.AlignRight)
 
-        self.mouse_meters = QLabel("Loading...")
+        self.mouse_meters = Label("Loading...")
         self.mouse_meters.setAlignment(Qt.AlignRight)
 
         pixels_layout = QHBoxLayout()
 
-        label = QLabel("Pixels: ")
+        label = Label("Pixels: ")
         label.setStyleSheet('color: gray')
 
         pixels_layout.addWidget(label)
         pixels_layout.addWidget(self.mouse_pixels)
         layout.addLayout(pixels_layout)
 
-        label = QLabel("Distance: ")
+        label = Label("Distance: ")
         label.setStyleSheet('color: gray')
 
         meters_layout = QHBoxLayout()
@@ -387,26 +549,23 @@ class Window(QMainWindow):
         layout.addLayout(meters_layout)
         
         # keyboard stats splitter
-        frame = QFrame()
-        frame.setFrameStyle(QFrame.HLine | QFrame.Raised)
-        frame.setLineWidth(1)
+        frame = Splitter()
         layout.addWidget(frame)
 
         # keyboard stats title
-        title = QLabel("Keyboard Stats")
+        title = Label("Keyboard Stats", bold=True)
         font = title.font()
-        font.setBold(True)
-        font.setPointSize(10)
+        font.setPointSize(12)
         title.setFont(font)
         layout.addWidget(title)
 
         # keyboard press stats
         kb_layout = QHBoxLayout()
 
-        self.kb_press = QLabel("Loading...")
+        self.kb_press = Label("Loading...")
         self.kb_press.setAlignment(Qt.AlignRight)
 
-        label = QLabel("Total keypresses: ")
+        label = Label("Total keypresses: ")
         label.setStyleSheet('color: gray')
 
         kb_layout.addWidget(label)
@@ -415,21 +574,23 @@ class Window(QMainWindow):
         layout.addLayout(kb_layout)
 
         # keyboard layout
-        self.kb_label = QLabel()
+        self.kb_label = Label()
         self.kb_label.setAlignment(Qt.AlignHCenter)
 
         layout.addWidget(self.kb_label)
 
         # full stats button
-        button = QPushButton("View as list...")
+        b_widget = QWidget()
+        button = Button("View as list...")
         button.clicked.connect(self.show_keylist)
-        layout.addWidget(button)
+        layout.addWidget(button, alignment=Qt.AlignHCenter)
 
         self.kb_window = None
 
         # adding widgets
         layout.setAlignment(Qt.AlignTop)
         widget = QWidget()
+        widget.setStyleSheet('background-color: #202020;')
         widget.setLayout(layout)
 
         self.setCentralWidget(widget)
@@ -468,6 +629,7 @@ class Window(QMainWindow):
         self.kb_label.setPixmap(canvas)
 
         painter = QPainter(self.kb_label.pixmap())
+        painter.setRenderHint(QPainter.Antialiasing)
 
         for scancode, rect in rects.items():
             name = rect[0]
@@ -478,37 +640,40 @@ class Window(QMainWindow):
             if scancode in data:
                 amount = utils.shorten(data[scancode], 1)
                 color = utils.get_heatmap_color(percents[scancode])
+                percent = percents[scancode]
             else:
                 amount = '0'
                 color = '#%02x%02x%02x' % config.HEATMAP_COLORS[0]
+                percent = 0
 
             # rect
             brush = QBrush()
             brush.setStyle(Qt.SolidPattern)
             brush.setColor(QColor(color))
             painter.setBrush(brush)
+            painter.setPen(QPen(QColor(255,255,255,30)))
 
-            painter.drawRect(*rect)
+            painter.drawRoundedRect(*rect, 4, 4)
 
             # amount
-            font = QFont()
-            font.setPointSize(6)
+            painter.setPen(QPen(QColor(255,255,255,int(128+127*percent))))
+
+            font = QFont(config.BOLD_FONT_NAME, 6)
             painter.setFont(font)
 
-            offset = 6 if name != None else 0
+            offset = 7 if name != None else 0
             painter.drawText(
-                rect[0]+1, rect[1]-offset, *size,
+                rect[0], rect[1]-offset, *size,
                 Qt.AlignHCenter | Qt.AlignCenter, amount
             )
 
             # name
             if name != None:
-                font = QFont()
-                font.setPointSize(8)
+                font = QFont(config.FONT_NAME, 8)
                 painter.setFont(font)
 
                 painter.drawText(
-                    rect[0]+1, rect[1]+5, *size,
+                    rect[0], rect[1]+4, *size,
                     Qt.AlignHCenter | Qt.AlignCenter, name
                 )
         
@@ -566,6 +731,9 @@ class Window(QMainWindow):
 
 
 app = QApplication([])
+
+QFontDatabase.addApplicationFont(config.FONT)
+QFontDatabase.addApplicationFont(config.BOLD_FONT)
 
 window = Window()
 window.show()
