@@ -14,4 +14,3 @@ To view the collected stats, launch `dashboard.py`.
 
 > [!NOTE]
 > Right now, you can only launch the dashboard as a standalone app, not within the MKSC collector.
-> Also, the dashboard currently doesn't show the heatmap of the pressed keys, though the data is still being collected and stored in `data.mksc`. It's actually just a JSON with scan codes as keys and amount of times the key was pressed as values.
