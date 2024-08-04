@@ -11,6 +11,3 @@ To launch this program, clone this repo (`git clone https://github.com/moontr3/m
 After launch, an icon will appear in your taskbar that indicates that the program is currently working. To close the program, press RMB on the icon and click Exit MKSC.
 
 To view the collected stats, launch `dashboard.py`.
-
-> [!NOTE]
-> Right now, you can only launch the dashboard as a standalone app, not within the MKSC collector.
