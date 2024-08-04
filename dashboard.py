@@ -487,255 +487,255 @@ class KeyList(ScrollArea):
 
 
 # window
+def generate_window():
+    class Window(QMainWindow):
+        def __init__(self):
+            super().__init__()
 
-class Window(QMainWindow):
-    def __init__(self):
-        super().__init__()
+            self.setWindowTitle("MKSC Dashboard")
 
-        self.setWindowTitle("MKSC Dashboard")
+            # creating page layout
+            layout = QVBoxLayout()
 
-        # creating page layout
-        layout = QVBoxLayout()
+            # F5 label
+            title_layout = QHBoxLayout()
 
-        # F5 label
-        title_layout = QHBoxLayout()
+            title = Label("MKSC", bold=True)
+            font = title.font()
+            font.setPointSize(24)
+            title.setFont(font)
+            title_layout.addWidget(title)
 
-        title = Label("MKSC", bold=True)
-        font = title.font()
-        font.setPointSize(24)
-        title.setFont(font)
-        title_layout.addWidget(title)
+            f5 = Label("Press F5 to reload")
+            f5.setStyleSheet('color: gray')
+            title_layout.addWidget(f5)
+            f5.setAlignment(Qt.AlignRight | Qt.AlignCenter)
 
-        f5 = Label("Press F5 to reload")
-        f5.setStyleSheet('color: gray')
-        title_layout.addWidget(f5)
-        f5.setAlignment(Qt.AlignRight | Qt.AlignCenter)
+            layout.addLayout(title_layout)
+            
+            # mouse stats splitter
+            frame = Splitter(thicc=True)
+            layout.addWidget(frame)
 
-        layout.addLayout(title_layout)
-        
-        # mouse stats splitter
-        frame = Splitter(thicc=True)
-        layout.addWidget(frame)
+            # mouse stats title
+            title = Label("Mouse Move Stats", bold=True)
+            font = title.font()
+            font.setPointSize(12)
+            title.setFont(font)
+            layout.addWidget(title)
 
-        # mouse stats title
-        title = Label("Mouse Move Stats", bold=True)
-        font = title.font()
-        font.setPointSize(12)
-        title.setFont(font)
-        layout.addWidget(title)
+            # stats
+            self.mouse_pixels = Label("Loading...")
+            self.mouse_pixels.setAlignment(Qt.AlignRight)
 
-        # stats
-        self.mouse_pixels = Label("Loading...")
-        self.mouse_pixels.setAlignment(Qt.AlignRight)
+            self.mouse_meters = Label("Loading...")
+            self.mouse_meters.setAlignment(Qt.AlignRight)
 
-        self.mouse_meters = Label("Loading...")
-        self.mouse_meters.setAlignment(Qt.AlignRight)
+            pixels_layout = QHBoxLayout()
 
-        pixels_layout = QHBoxLayout()
+            label = Label("Pixels: ")
+            label.setStyleSheet('color: gray')
 
-        label = Label("Pixels: ")
-        label.setStyleSheet('color: gray')
+            pixels_layout.addWidget(label)
+            pixels_layout.addWidget(self.mouse_pixels)
+            layout.addLayout(pixels_layout)
 
-        pixels_layout.addWidget(label)
-        pixels_layout.addWidget(self.mouse_pixels)
-        layout.addLayout(pixels_layout)
+            label = Label("Distance: ")
+            label.setStyleSheet('color: gray')
 
-        label = Label("Distance: ")
-        label.setStyleSheet('color: gray')
+            meters_layout = QHBoxLayout()
+            meters_layout.addWidget(label)
+            meters_layout.addWidget(self.mouse_meters)
+            layout.addLayout(meters_layout)
+            
+            # keyboard stats splitter
+            frame = Splitter()
+            layout.addWidget(frame)
 
-        meters_layout = QHBoxLayout()
-        meters_layout.addWidget(label)
-        meters_layout.addWidget(self.mouse_meters)
-        layout.addLayout(meters_layout)
-        
-        # keyboard stats splitter
-        frame = Splitter()
-        layout.addWidget(frame)
+            # keyboard stats title
+            title = Label("Keyboard Stats", bold=True)
+            font = title.font()
+            font.setPointSize(12)
+            title.setFont(font)
+            layout.addWidget(title)
 
-        # keyboard stats title
-        title = Label("Keyboard Stats", bold=True)
-        font = title.font()
-        font.setPointSize(12)
-        title.setFont(font)
-        layout.addWidget(title)
+            # keyboard press stats
+            kb_layout = QHBoxLayout()
 
-        # keyboard press stats
-        kb_layout = QHBoxLayout()
+            self.kb_press = Label("Loading...")
+            self.kb_press.setAlignment(Qt.AlignRight)
 
-        self.kb_press = Label("Loading...")
-        self.kb_press.setAlignment(Qt.AlignRight)
+            label = Label("Total keypresses: ")
+            label.setStyleSheet('color: gray')
 
-        label = Label("Total keypresses: ")
-        label.setStyleSheet('color: gray')
+            kb_layout.addWidget(label)
+            kb_layout.addWidget(self.kb_press)
 
-        kb_layout.addWidget(label)
-        kb_layout.addWidget(self.kb_press)
-
-        layout.addLayout(kb_layout)
-
-        # keyboard layout
-        self.kb_label = Label()
-        self.kb_label.setAlignment(Qt.AlignHCenter)
-
-        layout.addWidget(self.kb_label)
-
-        # full stats button
-        b_widget = QWidget()
-        button = Button("View as list...")
-        button.clicked.connect(self.show_keylist)
-        layout.addWidget(button, alignment=Qt.AlignHCenter)
-
-        self.kb_window = None
-
-        # adding widgets
-        layout.setAlignment(Qt.AlignTop)
-        widget = QWidget()
-        widget.setStyleSheet('background-color: #202020;')
-        widget.setLayout(layout)
-
-        self.setCentralWidget(widget)
-
-        # reloading data
-        self.kb_data = None
-        self.reload()
-
-
-    def show_keylist(self):
-        if self.kb_data == None: return
-
-        if self.kb_window == None:
-            self.kb_window = KeyList(self.kb_data)
-        self.kb_window.show()
-
-
-    def redraw_keyboard(self, data:Dict[int,int]):
-        '''
-        Redraws the keyboard widget.
-        '''
-        print('Redrawing')
-
-        # calculating data
-        if len(data) != 0:
-            max_val = max(data.values())
-            percents = {
-                k: v/max_val for k,v in data.items()
-            }
-        else:
-            percents = {}
-
-        # drawing keyboard
-        canvas = QPixmap(*kb_size)
-        canvas.fill(Qt.transparent)
-        self.kb_label.setPixmap(canvas)
-
-        painter = QPainter(self.kb_label.pixmap())
-        painter.setRenderHint(QPainter.Antialiasing)
-
-        for scancode, rect in rects.items():
-            name = rect[0]
-            rect = rect[1:]
-            size = rect[2:]
-
-            # color
-            if scancode in data:
-                amount = utils.shorten(data[scancode], 1)
-                color = utils.get_heatmap_color(percents[scancode])
-                percent = percents[scancode]
-            else:
-                amount = '0'
-                color = '#%02x%02x%02x' % config.HEATMAP_COLORS[0]
-                percent = 0
-
-            # rect
-            brush = QBrush()
-            brush.setStyle(Qt.SolidPattern)
-            brush.setColor(QColor(color))
-            painter.setBrush(brush)
-            painter.setPen(QPen(QColor(255,255,255,30)))
-
-            painter.drawRoundedRect(*rect, 4, 4)
-
-            # amount
-            painter.setPen(QPen(QColor(255,255,255,int(128+127*percent))))
-
-            font = QFont(config.BOLD_FONT_NAME, 6)
-            painter.setFont(font)
-
-            offset = 7 if name != None else 0
-            painter.drawText(
-                rect[0], rect[1]-offset, *size,
-                Qt.AlignHCenter | Qt.AlignCenter, amount
-            )
-
-            # name
-            if name != None:
-                font = QFont(config.FONT_NAME, 8)
-                painter.setFont(font)
-
-                painter.drawText(
-                    rect[0], rect[1]+4, *size,
-                    Qt.AlignHCenter | Qt.AlignCenter, name
-                )
-        
-        painter.end()
-
-
-    def keyPressEvent(self, event):
-        '''
-        Reloading upon pressing a key
-        '''
-        if isinstance(event, QKeyEvent):
-            if event.key() == Qt.Key_F5:
-                self.reload()
-
-
-    def reload(self):
-        '''
-        Reloads data from a file.
-        '''
-        print("Reloading")
-
-        try:
-            with open(config.INDEX_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-
-            # mouse movements
-            px = data['mouse_move']
-            meters = px/config.PPM
-
-            self.mouse_pixels.setText(f'{utils.shorten(px)}')
-            self.mouse_meters.setText(utils.shorten_dist(meters))
-
-            # keypresses
-            values = data['keystrokes'].values()
-            total = sum(values)
-
-            self.kb_press.setText(f'{utils.shorten(total)}')
+            layout.addLayout(kb_layout)
 
             # keyboard layout
-            self.kb_data: Dict[int,int] = {
-                int(k):v for k,v in data['keystrokes'].items()
-            }
-            self.redraw_keyboard(self.kb_data)
+            self.kb_label = Label()
+            self.kb_label.setAlignment(Qt.AlignHCenter)
 
-            # reloading menu
-            if self.kb_window != None:
-                self.kb_window.reload_data(self.kb_data)
+            layout.addWidget(self.kb_label)
 
-        except Exception as e:
-            print(f'Error reading file: {e}')
+            # full stats button
+            b_widget = QWidget()
+            button = Button("View as list...")
+            button.clicked.connect(self.show_keylist)
+            layout.addWidget(button, alignment=Qt.AlignHCenter)
 
-            self.mouse_pixels.setText('Error')
-            self.mouse_meters.setText('Error')
-            self.kb_press.setText('Error')
+            self.kb_window = None
+
+            # adding widgets
+            layout.setAlignment(Qt.AlignTop)
+            widget = QWidget()
+            widget.setStyleSheet('background-color: #202020;')
+            widget.setLayout(layout)
+
+            self.setCentralWidget(widget)
+
+            # reloading data
+            self.kb_data = None
+            self.reload()
 
 
-app = QApplication([])
+        def show_keylist(self):
+            if self.kb_data == None: return
 
-QFontDatabase.addApplicationFont(config.FONT)
-QFontDatabase.addApplicationFont(config.BOLD_FONT)
+            if self.kb_window == None:
+                self.kb_window = KeyList(self.kb_data)
+            self.kb_window.show()
 
-window = Window()
-window.show()
 
-app.exec()
+        def redraw_keyboard(self, data:Dict[int,int]):
+            '''
+            Redraws the keyboard widget.
+            '''
+            print('Redrawing')
+
+            # calculating data
+            if len(data) != 0:
+                max_val = max(data.values())
+                percents = {
+                    k: v/max_val for k,v in data.items()
+                }
+            else:
+                percents = {}
+
+            # drawing keyboard
+            canvas = QPixmap(*kb_size)
+            canvas.fill(Qt.transparent)
+            self.kb_label.setPixmap(canvas)
+
+            painter = QPainter(self.kb_label.pixmap())
+            painter.setRenderHint(QPainter.Antialiasing)
+
+            for scancode, rect in rects.items():
+                name = rect[0]
+                rect = rect[1:]
+                size = rect[2:]
+
+                # color
+                if scancode in data:
+                    amount = utils.shorten(data[scancode], 1)
+                    color = utils.get_heatmap_color(percents[scancode])
+                    percent = percents[scancode]
+                else:
+                    amount = '0'
+                    color = '#%02x%02x%02x' % config.HEATMAP_COLORS[0]
+                    percent = 0
+
+                # rect
+                brush = QBrush()
+                brush.setStyle(Qt.SolidPattern)
+                brush.setColor(QColor(color))
+                painter.setBrush(brush)
+                painter.setPen(QPen(QColor(255,255,255,30)))
+
+                painter.drawRoundedRect(*rect, 4, 4)
+
+                # amount
+                painter.setPen(QPen(QColor(255,255,255,int(128+127*percent))))
+
+                font = QFont(config.BOLD_FONT_NAME, 6)
+                painter.setFont(font)
+
+                offset = 7 if name != None else 0
+                painter.drawText(
+                    rect[0], rect[1]-offset, *size,
+                    Qt.AlignHCenter | Qt.AlignCenter, amount
+                )
+
+                # name
+                if name != None:
+                    font = QFont(config.FONT_NAME, 8)
+                    painter.setFont(font)
+
+                    painter.drawText(
+                        rect[0], rect[1]+4, *size,
+                        Qt.AlignHCenter | Qt.AlignCenter, name
+                    )
+            
+            painter.end()
+
+
+        def keyPressEvent(self, event):
+            '''
+            Reloading upon pressing a key
+            '''
+            if isinstance(event, QKeyEvent):
+                if event.key() == Qt.Key_F5:
+                    self.reload()
+
+
+        def reload(self):
+            '''
+            Reloads data from a file.
+            '''
+            print("Reloading")
+
+            try:
+                with open(config.INDEX_FILE, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+
+                # mouse movements
+                px = data['mouse_move']
+                meters = px/config.PPM
+
+                self.mouse_pixels.setText(f'{utils.shorten(px)}')
+                self.mouse_meters.setText(utils.shorten_dist(meters))
+
+                # keypresses
+                values = data['keystrokes'].values()
+                total = sum(values)
+
+                self.kb_press.setText(f'{utils.shorten(total)}')
+
+                # keyboard layout
+                self.kb_data: Dict[int,int] = {
+                    int(k):v for k,v in data['keystrokes'].items()
+                }
+                self.redraw_keyboard(self.kb_data)
+
+                # reloading menu
+                if self.kb_window != None:
+                    self.kb_window.reload_data(self.kb_data)
+
+            except Exception as e:
+                print(f'Error reading file: {e}')
+
+                self.mouse_pixels.setText('Error')
+                self.mouse_meters.setText('Error')
+                self.kb_press.setText('Error')
+
+
+    app = QApplication([])
+
+    QFontDatabase.addApplicationFont(config.FONT)
+    QFontDatabase.addApplicationFont(config.BOLD_FONT)
+
+    window = Window()
+    window.show()
+
+    app.exec()
